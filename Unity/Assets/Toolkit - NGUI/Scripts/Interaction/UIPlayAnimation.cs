@@ -21,6 +21,13 @@ public class UIPlayAnimation : MonoBehaviour
 
 	public Animation target;
 
+#if !UNITY_3_5
+	/// <summary>
+	/// Target animator system.
+	/// </summary>
+
+	public Animator animator;
+#endif
 	/// <summary>
 	/// Optional clip name, if the animation has more than one clip.
 	/// </summary>
@@ -95,17 +102,44 @@ public class UIPlayAnimation : MonoBehaviour
 		}
 	}
 
+	/// <summary>
+	/// Automatically find the necessary components.
+	/// </summary>
+
 	void Start ()
 	{
 		mStarted = true;
+
+#if !UNITY_3_5
+		// Automatically try to find the animator
+		if (target == null && animator == null)
+		{
+			animator = GetComponentInChildren<Animator>();
+#if UNITY_EDITOR
+			if (animator != null) UnityEditor.EditorUtility.SetDirty(this);
+#endif
+		}
+
+		if (animator != null)
+		{
+			// Ensure that the animator is disabled as we will be sampling it manually
+			if (animator.enabled) animator.enabled = false;
+
+			// Don't continue since we already have an animator to work with
+			return;
+		}
+#endif // !UNITY_3_5
 
 		if (target == null)
 		{
 			target = GetComponentInChildren<Animation>();
 #if UNITY_EDITOR
-			UnityEditor.EditorUtility.SetDirty(this);
+			if (target != null) UnityEditor.EditorUtility.SetDirty(this);
 #endif
 		}
+
+		if (target != null && target.enabled)
+			target.enabled = false;
 	}
 
 	void OnEnable ()
@@ -198,7 +232,11 @@ public class UIPlayAnimation : MonoBehaviour
 
 	public void Play (bool forward, bool onlyIfDifferent)
 	{
+#if UNITY_3_5
 		if (target)
+#else
+		if (target || animator)
+#endif
 		{
 			if (onlyIfDifferent)
 			{
@@ -211,7 +249,13 @@ public class UIPlayAnimation : MonoBehaviour
 
 			int pd = -(int)playDirection;
 			Direction dir = forward ? playDirection : ((Direction)pd);
+#if UNITY_3_5
 			ActiveAnimation anim = ActiveAnimation.Play(target, clipName, dir, ifDisabledOnPlay, disableWhenFinished);
+#else
+			ActiveAnimation anim = target ?
+				ActiveAnimation.Play(target, clipName, dir, ifDisabledOnPlay, disableWhenFinished) :
+				ActiveAnimation.Play(animator, clipName, dir, ifDisabledOnPlay, disableWhenFinished);
+#endif
 
 			if (anim != null)
 			{

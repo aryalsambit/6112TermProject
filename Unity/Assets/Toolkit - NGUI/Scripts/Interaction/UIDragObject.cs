@@ -107,7 +107,7 @@ public class UIDragObject : MonoBehaviour
 
 	void FindPanel ()
 	{
-		mPanel = (target != null) ? UIPanel.Find(target.transform.parent, true) : null;
+		mPanel = (target != null) ? UIPanel.Find(target.transform.parent) : null;
 		if (mPanel == null) restrictWithinPanel = false;
 	}
 
@@ -242,6 +242,9 @@ public class UIDragObject : MonoBehaviour
 			after.x = Mathf.Round(after.x);
 			after.y = Mathf.Round(after.y);
 			target.localPosition = after;
+
+			UIScrollView ds = mPanel.GetComponent<UIScrollView>();
+			if (ds != null) ds.UpdateScrollbars(true);
 		}
 		else target.position += worldDelta;
 	}
